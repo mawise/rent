@@ -1,8 +1,12 @@
 package com.rentshape;
 
+import com.rentshape.exceptions.DatabaseException;
+import com.rentshape.exceptions.DuplicateUserException;
 import com.rentshape.model.User;
 import spark.ModelAndView;
 import spark.Request;
+import spark.Response;
+import spark.Spark;
 import spark.template.handlebars.HandlebarsTemplateEngine;
 
 import java.sql.Connection;
@@ -30,17 +34,20 @@ public class WebApp {
 
         get("/hello", (req, res) -> "Hello World");
 
-        /** Sign up */
+        /** Home page with sign-up */
         get("/", (req, res) -> {
             User user = loggedInUser(req);
             if (null != user){
                 res.redirect("/user/home");
                 return null;
             } else {
-                return new ModelAndView(new HashMap<>(), "signup.hbs");
+                Map<String, String> cookieData = req.cookies();
+                clearTempCookies(res);
+                return new ModelAndView(cookieData, "signup.hbs");
             }
         }, new HandlebarsTemplateEngine());
 
+        /** post the login form here */
         post("/user/signin", (req, res) -> {
             String email = req.queryParams("email");
             String pass = req.queryParams("pass");
@@ -56,17 +63,24 @@ public class WebApp {
             return new ModelAndView(new HashMap<>(), "signin.hbs");
         }, new HandlebarsTemplateEngine());
 
+        /** post the registration form here */
         post("/user/new", (req, res) -> {
             String email = req.queryParams("email");
             String pass = req.queryParams("pass");
             User user = new User(email, pass);
-            user.create();
+            try {
+                user.create();
+            } catch (DuplicateUserException e){
+                res.cookie("sign-up-error", e.getMessage());
+                res.redirect("/");
+            }
             String token = user.getToken();
             res.cookie("token", token);
             res.redirect("/user/home");
             return null;
         }); // form posts here, creates users
 
+        /** post the logout button here */
         post("/logout", (req, res) -> {
             User user = loggedInUser(req);
             if (null != user){
@@ -77,6 +91,7 @@ public class WebApp {
             return null;
         });
 
+        /** home page for logged in user */
         get("/user/home", (req, res) -> {
             User user = loggedInUser(req);
             if (null == user){
@@ -87,6 +102,7 @@ public class WebApp {
             data.put("email", user.getEmail());
             return new ModelAndView(data, "userhome.hbs");
         }, new HandlebarsTemplateEngine()); // user home page
+
         /*
         post("/user/:id"); // modify profile
         get("/user/:id/edit"); // edit profile form -> posts to /user/:id
@@ -105,6 +121,19 @@ public class WebApp {
         get("/link/new"); // form to create a new link (application ID, link name)
         post("/link"); // create a new link (for posts here)
 */
+
+        get("/error", (req, res) -> new ModelAndView(req.cookies(), "error.hbs"), new HandlebarsTemplateEngine());
+
+        exception(DatabaseException.class, (e, req, res) -> {
+            res.cookie("error", e.getMessage());
+            res.redirect("/error");
+        });
+    }
+
+    public static void clearTempCookies(Response res){
+        // use an enum for cookie keys?
+        res.removeCookie("sign-up-error");
+        res.removeCookie("error");
     }
 
     public static User loggedInUser(Request req){

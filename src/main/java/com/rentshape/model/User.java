@@ -1,5 +1,9 @@
 package com.rentshape.model;
 
+import com.mysql.jdbc.exceptions.MySQLIntegrityConstraintViolationException;
+import com.rentshape.exceptions.DatabaseException;
+import com.rentshape.exceptions.DuplicateUserException;
+
 import java.sql.*;
 import java.util.Arrays;
 import java.util.UUID;
@@ -26,19 +30,19 @@ public class User {
 
 
 
-    public static User fromToken(String token){
+    public static User fromToken(String token) throws DatabaseException {
         return fromField("token", token);
     }
 
-    public static User fromEmail(String email){
+    public static User fromEmail(String email) throws DatabaseException {
         return fromField("email", email);
     }
 
-    public static User fromUuid(String uuid){
+    public static User fromUuid(String uuid) throws DatabaseException {
         return fromField("uuid", uuid);
     }
 
-    private static User fromField(String field, String value){
+    private static User fromField(String field, String value) throws DatabaseException {
         validateConnection();
         String query = "select * from users where "+field+" = ?";
         try {
@@ -57,14 +61,14 @@ public class User {
                 return null; // TODO: use optional
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Failed to query the DB", e);
+            throw new DatabaseException("querying the database", e);
         }
     }
 
     /**
      * add a new user to DB.  Assumes uuid not already in DB.
      */
-    public void create(){
+    public void create() throws DatabaseException, DuplicateUserException {
         validateConnection();
         validateUser();
         String insertStatement = "INSERT INTO users (uuid, email, token, password_salt, password_hash) VALUES (?,?,?,?,?);";
@@ -76,8 +80,10 @@ public class User {
             stmt.setBytes(4, password_salt);
             stmt.setBytes(5, password_hash);
             stmt.execute();
+        } catch (MySQLIntegrityConstraintViolationException dupe){
+            throw new DuplicateUserException(email);
         } catch (SQLException e) {
-            throw new RuntimeException("Failed to save to DB", e);
+            throw new DatabaseException("creating your account", e);
         }
     }
 
