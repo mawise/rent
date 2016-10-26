@@ -61,6 +61,7 @@ public class User {
                 return null; // TODO: use optional
             }
         } catch (SQLException e) {
+            e.printStackTrace();
             throw new DatabaseException("querying the database", e);
         }
     }
@@ -83,7 +84,11 @@ public class User {
         } catch (MySQLIntegrityConstraintViolationException dupe){
             throw new DuplicateUserException(email);
         } catch (SQLException e) {
-            throw new DatabaseException("creating your account", e);
+            if (e.getMessage().contains("Duplicate entry")){
+                throw new DuplicateUserException(email);
+            } else {
+                throw new DatabaseException("creating your account", e);
+            }
         }
     }
 

@@ -5,8 +5,6 @@ import com.rentshape.exceptions.DuplicateUserException;
 import com.rentshape.model.User;
 import spark.ModelAndView;
 import spark.Request;
-import spark.Response;
-import spark.Spark;
 import spark.template.handlebars.HandlebarsTemplateEngine;
 
 import java.sql.Connection;
@@ -21,6 +19,7 @@ public class WebApp {
 
     private static String DB_CONNECTION = "mysql://localhost:3306/";
     private static String DB_NAME = "rentshape";
+    private static int THIRTY_DAYS = 2592000;
 
     public static void main(String[] args) throws SQLException {
 
@@ -41,14 +40,12 @@ public class WebApp {
                 res.redirect("/user/home");
                 return null;
             } else {
-                Map<String, String> cookieData = req.cookies();
-                clearTempCookies(res);
-                return new ModelAndView(cookieData, "signup.hbs");
+                return new ModelAndView(new HashMap<>(), "signup.hbs");
             }
         }, new HandlebarsTemplateEngine());
 
         /** post the login form here */
-        post("/user/signin", (req, res) -> {
+        post("/", (req, res) -> {
             String email = req.queryParams("email");
             String pass = req.queryParams("pass");
             User user = User.fromEmail(email);
@@ -56,7 +53,7 @@ public class WebApp {
                 user.resetToken();
                 user.save();
                 String token = user.getToken();
-                res.cookie("token", token);
+                res.cookie("token", token, THIRTY_DAYS);
                 res.redirect("/user/home");
                 return null;
             }
@@ -70,15 +67,16 @@ public class WebApp {
             User user = new User(email, pass);
             try {
                 user.create();
-            } catch (DuplicateUserException e){
-                res.cookie("sign-up-error", e.getMessage());
-                res.redirect("/");
+            } catch (DuplicateUserException | DatabaseException e){
+                Map<String, String> data = new HashMap<String, String>();
+                data.put("error", e.getMessage());
+                return new ModelAndView(data, "signup.hbs");
             }
             String token = user.getToken();
-            res.cookie("token", token);
+            res.cookie("token", token, THIRTY_DAYS);
             res.redirect("/user/home");
             return null;
-        }); // form posts here, creates users
+        }, new HandlebarsTemplateEngine()); // form posts here, creates users
 
         /** post the logout button here */
         post("/logout", (req, res) -> {
@@ -86,6 +84,9 @@ public class WebApp {
             if (null != user){
                 user.resetToken();
                 user.save();
+                for (String cookieKey : req.cookies().keySet()) {
+                    res.removeCookie(cookieKey);
+                }
             }
             res.redirect("/");
             return null;
@@ -103,11 +104,8 @@ public class WebApp {
             return new ModelAndView(data, "userhome.hbs");
         }, new HandlebarsTemplateEngine()); // user home page
 
-        /*
-        post("/user/:id"); // modify profile
-        get("/user/:id/edit"); // edit profile form -> posts to /user/:id
-        get("/user/:id/verify/:code"); // email or txt verification code goes here
-*/
+        // get("/user/:id/verify/:code"); // email or txt verification code goes here
+
 
 /*
         get("/application"); // index of a users apps
@@ -122,18 +120,19 @@ public class WebApp {
         post("/link"); // create a new link (for posts here)
 */
 
-        get("/error", (req, res) -> new ModelAndView(req.cookies(), "error.hbs"), new HandlebarsTemplateEngine());
+        get("/error", (req, res) -> {
+            return new ModelAndView(new HashMap<>(), "error.hbs");
+        }, new HandlebarsTemplateEngine());
 
+
+        get ("*", (req, res) -> {
+            res.redirect("/");
+            return null;
+        });
         exception(DatabaseException.class, (e, req, res) -> {
-            res.cookie("error", e.getMessage());
+            e.printStackTrace();
             res.redirect("/error");
         });
-    }
-
-    public static void clearTempCookies(Response res){
-        // use an enum for cookie keys?
-        res.removeCookie("sign-up-error");
-        res.removeCookie("error");
     }
 
     public static User loggedInUser(Request req){
@@ -141,7 +140,7 @@ public class WebApp {
             String token = req.cookie("token");
             User user = User.fromToken(token);
             return user;
-        } catch (Exception e){
+        } catch (Exception e) {
             return null;
         }
     }

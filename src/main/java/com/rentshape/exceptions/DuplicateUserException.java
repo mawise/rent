@@ -5,6 +5,6 @@ package com.rentshape.exceptions;
  */
 public class DuplicateUserException extends Exception {
     public DuplicateUserException(String email){
-        super(email + " already exists, please login with that account or use another email");
+        super(email + " already exists, please login with that account above or use another email");
     }
 }

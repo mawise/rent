@@ -2,12 +2,9 @@
 
 <div class="jumbotron">
     <div class="container">
-        {{#if error}}
-        <p>{{error}}</p>
-        {{else}}
-        <p>Your login credentials didn't work.  Try again</p>
-        {{/if}}
-        <form method="post" action="/user/signin">
+
+        <p>Your login credentials didn't work.  Please try again.</p>
+        <form method="post" action="/">
             <div class="form-group">
                 <label for="exampleInputEmail1">Email address</label>
                 <input name="email" type="email" class="form-control" id="exampleInputEmail1" placeholder="Email">
