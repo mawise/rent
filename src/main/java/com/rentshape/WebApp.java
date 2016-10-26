@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.Map;
 
 import static spark.Spark.*;
 
@@ -19,6 +20,8 @@ public class WebApp {
 
     public static void main(String[] args) throws SQLException {
 
+        staticFileLocation("public");
+
         Connection sqlConn = DriverManager.getConnection(
                 "jdbc:" + DB_CONNECTION + DB_NAME,
                 "root",
@@ -27,33 +30,31 @@ public class WebApp {
 
         get("/hello", (req, res) -> "Hello World");
 
-        /** Sign in */
+        /** Sign up */
         get("/", (req, res) -> {
             User user = loggedInUser(req);
             if (null != user){
-                res.redirect("/user/"+user.getUuid());
-                return null; //dummy return value
+                res.redirect("/user/home");
+                return null;
             } else {
-                return new ModelAndView(new HashMap(), "user.hbs");
+                return new ModelAndView(new HashMap<>(), "signup.hbs");
             }
         }, new HandlebarsTemplateEngine());
-        post("/", (req, res) -> {
+
+        post("/user/signin", (req, res) -> {
             String email = req.queryParams("email");
             String pass = req.queryParams("pass");
             User user = User.fromEmail(email);
-            if (user.isPassword(pass)){
-                res.cookie("token", user.getToken());
-                res.redirect("/user/"+user.getUuid());
-                return null;
-            } else {
-                res.redirect("/");
+            if (user != null && user.isPassword(pass)){
+                user.resetToken();
+                user.save();
+                String token = user.getToken();
+                res.cookie("token", token);
+                res.redirect("/user/home");
                 return null;
             }
-        });
-
-        get("/user/new", (req, res) ->
-            new ModelAndView(new HashMap(), "user.hbs"), new HandlebarsTemplateEngine()
-        ); // sign up form
+            return new ModelAndView(new HashMap<>(), "signin.hbs");
+        }, new HandlebarsTemplateEngine());
 
         post("/user/new", (req, res) -> {
             String email = req.queryParams("email");
@@ -62,20 +63,30 @@ public class WebApp {
             user.create();
             String token = user.getToken();
             res.cookie("token", token);
-            res.redirect("/user/"+user.getUuid());
+            res.redirect("/user/home");
             return null;
         }); // form posts here, creates users
 
-
-        get("/user/:uuid", (req, res) -> {
-            String cookieToken = req.cookie("token");
-            String uuid = req.params(":uuid");
-            User user = User.fromUuid(uuid);
-            if (!cookieToken.equals(user.getToken())){
-                res.redirect("/");
+        post("/logout", (req, res) -> {
+            User user = loggedInUser(req);
+            if (null != user){
+                user.resetToken();
+                user.save();
             }
-            return user.getEmail();
-        }); // user home page
+            res.redirect("/");
+            return null;
+        });
+
+        get("/user/home", (req, res) -> {
+            User user = loggedInUser(req);
+            if (null == user){
+                res.redirect("/");
+                return null;
+            }
+            Map<String, String> data = new HashMap<>();
+            data.put("email", user.getEmail());
+            return new ModelAndView(data, "userhome.hbs");
+        }, new HandlebarsTemplateEngine()); // user home page
         /*
         post("/user/:id"); // modify profile
         get("/user/:id/edit"); // edit profile form -> posts to /user/:id

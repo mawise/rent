@@ -142,6 +142,10 @@ public class User {
         this.token = token;
     }
 
+    public void resetToken() {
+        token = UUID.randomUUID().toString();
+    }
+
     public byte[] getPassword_salt() {
         return password_salt;
     }
