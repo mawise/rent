@@ -2,6 +2,8 @@ package com.rentshape;
 
 import com.rentshape.exceptions.DatabaseException;
 import com.rentshape.exceptions.DuplicateUserException;
+import com.rentshape.model.Application;
+import com.rentshape.model.DbModel;
 import com.rentshape.model.User;
 import spark.ModelAndView;
 import spark.Request;
@@ -11,6 +13,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static spark.Spark.*;
@@ -29,7 +32,7 @@ public class WebApp {
                 "jdbc:" + DB_CONNECTION + DB_NAME,
                 "root",
                 "password");
-        User.setConnection(sqlConn);
+        DbModel.setConnection(sqlConn);
 
         get("/hello", (req, res) -> "Hello World");
 
@@ -92,24 +95,48 @@ public class WebApp {
             return null;
         });
 
-        /** home page for logged in user */
+        /** home page for logged in user, index of applications */
         get("/user/home", (req, res) -> {
             User user = loggedInUser(req);
             if (null == user){
                 res.redirect("/");
                 return null;
             }
-            Map<String, String> data = new HashMap<>();
+            Map<String, Object> data = new HashMap<>();
             data.put("email", user.getEmail());
+            List<Map<String, Object>> apps = Application.fromUser(user);
+            if (apps.size() > 0) {
+                data.put("apps", apps);
+            }
             return new ModelAndView(data, "userhome.hbs");
         }, new HandlebarsTemplateEngine()); // user home page
 
         // get("/user/:id/verify/:code"); // email or txt verification code goes here
 
+        get("/application/:id", (req, res) -> {
+            User user = loggedInUser(req);
+            if (null == user){
+                System.out.println("User Is Null for /application:id");
+                res.redirect("/");
+                return null;
+            }
+            int id = Integer.parseInt(req.params(":id"));
+            Map<String, Object> app = Application.fromId(id);
+            if (null == app){
+                System.out.println("App is null");
+            }
+            if (null == app || !app.get(Application.USERUUID).equals(user.getUuid())){
+                System.out.println("app user uuid: " + app.get(Application.USERUUID) + " user: " + user.getUuid());
+
+                res.redirect("/user/home");
+                return null;
+            }
+            return new ModelAndView(app, "app.hbs");
+        }, new HandlebarsTemplateEngine());
 
 /*
         get("/application"); // index of a users apps
-        get("/application/:id"); // view application,
+
         get("/application/:id/edit"); // edit form
         post("/application/:id"); // modify application
         post("/application/new"); // create empty app, then redirect to edit form
@@ -125,10 +152,10 @@ public class WebApp {
         }, new HandlebarsTemplateEngine());
 
 
-        get ("*", (req, res) -> {
-            res.redirect("/");
-            return null;
-        });
+    //    get ("*", (req, res) -> {  // this causes static routes to be unavailable (like /css/*)
+    //        res.redirect("/");
+    //        return null;
+    //    });
         exception(DatabaseException.class, (e, req, res) -> {
             e.printStackTrace();
             res.redirect("/error");

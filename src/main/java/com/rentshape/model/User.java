@@ -8,17 +8,7 @@ import java.sql.*;
 import java.util.Arrays;
 import java.util.UUID;
 
-public class User {
-
-    static Connection conn;
-    public static void setConnection(Connection conn){
-        User.conn = conn;
-    }
-    public static void validateConnection(){
-        if (null == User.conn){
-            throw new RuntimeException("Connection is null, initialize connection before saving");
-        }
-    }
+public class User extends DbModel {
 
     public void validateUser(){
         for (Object obj : Arrays.asList(uuid, email, token, password_hash, password_salt)) {
@@ -27,8 +17,6 @@ public class User {
             }
         }
     }
-
-
 
     public static User fromToken(String token) throws DatabaseException {
         return fromField("token", token);

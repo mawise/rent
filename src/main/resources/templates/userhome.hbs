@@ -2,7 +2,18 @@
     <div class="jumbotron">
         <div class="container">
             <h1>Hello, {{email}}</h1>
-            <p>home page</p>
+            <h2>Apps</h2>
+
+            <ul>
+            {{#each apps}}
+                <li>{{this.id}}</li>
+            {{/each}}
+
+            <li>
+                <a class="btn btn-default" href="#" role="button">Create New App</a>
+            </li>
+            </ul>
+
         </div>
     </div>
 {{> bottom.hbs}}
