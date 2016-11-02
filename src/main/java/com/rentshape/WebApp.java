@@ -23,6 +23,7 @@ public class WebApp {
     private static String DB_CONNECTION = "mysql://localhost:3306/";
     private static String DB_NAME = "rentshape";
     private static int THIRTY_DAYS = 2592000;
+    private static final String NAME = "__name";
 
     public static void main(String[] args) throws SQLException {
 
@@ -103,7 +104,7 @@ public class WebApp {
                 return null;
             }
             Map<String, Object> data = new HashMap<>();
-            data.put("email", user.getEmail());
+            data.put(NAME, user.getEmail());
             List<Map<String, Object>> apps = Application.fromUser(user);
             if (apps.size() > 0) {
                 data.put("apps", apps);
@@ -112,26 +113,6 @@ public class WebApp {
         }, new HandlebarsTemplateEngine()); // user home page
 
         // get("/user/:id/verify/:code"); // email or txt verification code goes here
-
-        get("/application/:id", (req, res) -> {
-            User user = loggedInUser(req);
-            if (null == user){
-                res.redirect("/");
-                return null;
-            }
-            int id = Integer.parseInt(req.params(":id"));
-            Map<String, Object> app = Application.fromId(id);
-            if (null == app){
-                System.out.println("App is null");
-            }
-            if (null == app || !app.get(Application.USERUUID).equals(user.getUuid())){
-                System.out.println("app user uuid: " + app.get(Application.USERUUID) + " user: " + user.getUuid());
-
-                res.redirect("/user/home");
-                return null;
-            }
-            return new ModelAndView(app, "app.hbs");
-        }, new HandlebarsTemplateEngine());
 
         post("/application/new", (req, res) -> {
             User user = loggedInUser(req);
@@ -145,11 +126,72 @@ public class WebApp {
             return null;
         }); // create empty app, then redirect to home page
 
-/*
-        get("/application"); // index of a users apps
+        get("/application/:appid", (req, res) -> {
+            User user = loggedInUser(req);
+            if (null == user){
+                res.redirect("/");
+                return null;
+            }
+            int id = Integer.parseInt(req.params(":appid"));
+            Map<String, Object> app = Application.fromId(id);
+            if (null == app || !app.get(Application.USERUUID).equals(user.getUuid())){
+                res.redirect("/user/home");
+                return null;
+            }
+            app.put(NAME, user.getEmail());
+            return new ModelAndView(app, "app.hbs");
+        }, new HandlebarsTemplateEngine());
 
-        get("/application/:id/edit"); // edit form
-        post("/application/:id"); // modify application
+        post("/application/:appid", (req, res) -> {
+            User user = loggedInUser(req);
+            if (null == user){
+                res.redirect("/");
+                return null;
+            }
+            int id = Integer.parseInt(req.params(":appid"));
+            Map<String, Object> app = Application.fromId(id);
+            Application.update(app, req.queryMap().toMap());
+            Application.save(app);
+            res.redirect(req.pathInfo().toString());
+            return null;
+        }); // modify application
+
+        get("/del_application/:appid", (req, res) -> {
+            User user = loggedInUser(req);
+            if (null == user){
+                res.redirect("/");
+                return null;
+            }
+            int id = Integer.parseInt(req.params(":appid"));
+            Map<String, Object> app = Application.fromId(id);
+            if (null == app || !app.get(Application.USERUUID).equals(user.getUuid())){
+                res.redirect("/user/home");
+                return null;
+            }
+            app.put(NAME, user.getEmail());
+            return new ModelAndView(app, "delete_confirm.hbs");
+        }, new HandlebarsTemplateEngine());
+
+        post("/del_application/:appid", (req, res) -> {
+            User user = loggedInUser(req);
+            if (null == user){
+                res.redirect("/");
+                return null;
+            }
+            int id = Integer.parseInt(req.params(":appid"));
+            Map<String, Object> app = Application.fromId(id);
+            if (null == app || !app.get(Application.USERUUID).equals(user.getUuid())){
+                res.redirect("/user/home");
+                return null;
+            }
+            Application.delete(id);
+            res.redirect("/user/home");
+            return null;
+        });
+
+/*
+
+
 
 
         get("/link"); //index of users links (with buttons to delete?)
@@ -159,7 +201,12 @@ public class WebApp {
 */
 
         get("/error", (req, res) -> {
-            return new ModelAndView(new HashMap<>(), "error.hbs");
+            User user = loggedInUser(req);
+            Map<String, String> data = new HashMap<>();
+            if (null != user){
+                data.put(NAME, user.getEmail());
+            }
+            return new ModelAndView(data, "error.hbs");
         }, new HandlebarsTemplateEngine());
 
 

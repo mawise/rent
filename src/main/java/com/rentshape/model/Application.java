@@ -5,6 +5,7 @@ import com.rentshape.exceptions.DatabaseException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -40,9 +41,9 @@ public class Application extends DbModel {
     public static List<Map<String, Object>> fromUser(User user) throws DatabaseException {
         String uuid = user.getUuid();
         List<Map<String, Object>> apps = Application.fromField(USERUUID, uuid);
-        for (Map<String, Object> app : apps){
-            Application.setUser(app, user);
-        }
+       // for (Map<String, Object> app : apps){
+       //     Application.setUser(app, user);
+       // }
         return apps;
     }
 
@@ -78,7 +79,10 @@ public class Application extends DbModel {
                 for (String intField : INT_FIELDS) {
                     app.put(intField, rs.getInt(intField));
                 }
-                app.put(USERUUID, rs.getString(USERUUID));
+                String userUuid = rs.getString(USERUUID);
+                app.put(USERUUID, userUuid);
+                User user = User.fromUuid(userUuid);
+                app.put(USER, user);
                 appList.add(app);
             }
             return appList;
@@ -207,5 +211,33 @@ public class Application extends DbModel {
         } catch (SQLException e) {
             throw new DatabaseException("saving your application", e);
         }
+    }
+
+    public static void update(Map<String, Object> app, Map<String, String[]> formData){
+        for (String stringField : STRING_FIELDS){
+            String[] values = formData.get(stringField);
+            if (null != values && values.length > 0) {
+                app.put(stringField, values[0]);
+            }
+        }
+        for (String intField : INT_FIELDS){
+            if (intField.equals(ID)){ // I know, its funny because there are no other fields.
+                continue; //never update the ID.
+            }
+            String[] values = formData.get(intField);
+            if (null != values && values.length > 0) {
+                app.put(intField, Integer.parseInt(values[0])); // TODO catch NumberFormatException?
+            }
+        }
+    }
+
+    public static void delete(int id) throws DatabaseException {
+        try {
+            Statement stmt = conn.createStatement();
+            stmt.execute("DELETE FROM applications WHERE id = " + id);
+        } catch (SQLException e) {
+            throw new DatabaseException("Deleting your application", e);
+        }
+
     }
 }

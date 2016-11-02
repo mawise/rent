@@ -1,12 +1,15 @@
 {{> top.hbs}}
     <div class="jumbotron">
         <div class="container">
-            <h1>Hello, {{email}}</h1>
+            <h1>Hello, {{__name}}</h1>
             <h2>Apps</h2>
 
             <ul>
             {{#each apps}}
-                <li><a class="btn btn-default" href="/application/{{this.id}}" role="button">Edit App {{this.id}}</a></li>
+                <li>
+                    <a class="btn btn-default" href="/application/{{this.id}}" role="button">Edit App {{this.id}}</a>
+                    <a class="btn btn-default" href="/del_application/{{this.id}}" role="button">Delete App {{this.id}}</a>
+                </li>
             {{/each}}
 
             <li>
