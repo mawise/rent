@@ -6,11 +6,14 @@
 
             <ul>
             {{#each apps}}
-                <li>{{this.id}}</li>
+                <li><a class="btn btn-default" href="/application/{{this.id}}" role="button">Edit App {{this.id}}</a></li>
             {{/each}}
 
             <li>
-                <a class="btn btn-default" href="#" role="button">Create New App</a>
+                <form action="/application/new" method="post">
+                    <button type="submit" class="btn btn-success">Create New App</button>
+                </form>
+
             </li>
             </ul>
 

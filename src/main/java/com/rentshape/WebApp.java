@@ -116,7 +116,6 @@ public class WebApp {
         get("/application/:id", (req, res) -> {
             User user = loggedInUser(req);
             if (null == user){
-                System.out.println("User Is Null for /application:id");
                 res.redirect("/");
                 return null;
             }
@@ -134,12 +133,24 @@ public class WebApp {
             return new ModelAndView(app, "app.hbs");
         }, new HandlebarsTemplateEngine());
 
+        post("/application/new", (req, res) -> {
+            User user = loggedInUser(req);
+            if (null == user){
+                res.redirect("/");
+                return null;
+            }
+            Map<String, Object> newApp = Application.newApplication(user);
+            Application.create(newApp);
+            res.redirect("/user/home");
+            return null;
+        }); // create empty app, then redirect to home page
+
 /*
         get("/application"); // index of a users apps
 
         get("/application/:id/edit"); // edit form
         post("/application/:id"); // modify application
-        post("/application/new"); // create empty app, then redirect to edit form
+
 
         get("/link"); //index of users links (with buttons to delete?)
         get("/link/:uuid"); // view a specified application via link
@@ -156,6 +167,7 @@ public class WebApp {
     //        res.redirect("/");
     //        return null;
     //    });
+
         exception(DatabaseException.class, (e, req, res) -> {
             e.printStackTrace();
             res.redirect("/error");
