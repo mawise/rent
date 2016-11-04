@@ -17,9 +17,31 @@
                 <input type="text" class="form-control" id="first_name" name="first_name" value="{{first_name}}">
             </div>
             <div class="form-group">
-                <label for="email">Email</label>
-                <input type="text" class="form-control" id="email" name="email" value="{{email}}">
+                <label for="middle_name">Middle Name</label>
+                <input type="text" class="form-control" id="middle_name" name="middle_name" value="{{middle_name}}">
             </div>
+
+            Bank Accounts
+            {{#each banks}}
+            <div>
+                <div class="form-group">
+                    <label for="bank-name-{{@index}}">Bank Name</label>
+                    <input class="form-control" id="bank-name-{{@index}}" type="text" placeholder="{{this.name}}" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="bank-address-{{@index}}">Bank Name</label>
+                    <input class="form-control" id="bank-address-{{@index}}" type="text" placeholder="{{this.address}}" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="bank-account_number-{{@index}}">Account Number</label>
+                    <input class="form-control" id="bank-account_number-{{@index}}" type="text" placeholder="{{this.account_number}}" readonly>
+                </div>
+                <!-- button to edit this bank account -->
+                <!-- button to add a new bank account -->
+            </div>
+            {{else}}
+                <!-- no banks -->
+            {{/each}}
 
 
             <button type="submit" class="btn btn-default">Save Changes</button>

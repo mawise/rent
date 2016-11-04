@@ -13,6 +13,8 @@ import java.util.stream.Collectors;
  * Created by matt on 10/26/16.
  */
 public class Application extends DbModel {
+    public static final int MAX_STRING = 250;
+
     public final static String ID = "id";
     public final static String LASTNAME = "last_name";
     public final static String FIRSTNAME = "first_name";
@@ -37,6 +39,8 @@ public class Application extends DbModel {
 
     public final static String USER = "user";
     public final static String USERUUID = "user_uuid";
+
+    public final static String BANKS = "_banks";
 
     public static List<Map<String, Object>> fromUser(User user) throws DatabaseException {
         String uuid = user.getUuid();
@@ -83,6 +87,10 @@ public class Application extends DbModel {
                 app.put(USERUUID, userUuid);
                 User user = User.fromUuid(userUuid);
                 app.put(USER, user);
+                List<Map<String, Object>> banks = new Bank().fromAppId((int) app.get(ID));
+                app.put(BANKS, banks);
+
+
                 appList.add(app);
             }
             return appList;
@@ -95,10 +103,10 @@ public class Application extends DbModel {
     // Constructors
     private Application(){}
     Map<String, Object> newApplication(){
-        return new HashMap<String, Object>();
+        return new HashMap<>();
     }
     public static Map<String, Object> newApplication(User user){
-        Map<String, Object> app = new HashMap<String, Object>();
+        Map<String, Object> app = new HashMap<>();
         return setUser(app, user);
     }
 
@@ -162,10 +170,14 @@ public class Application extends DbModel {
             PreparedStatement stmt = conn.prepareStatement(createStatement.toString());
             for (int i = 0; i < fields.size(); i++) {
                 String field = fields.get(i);
-                if (field == USERUUID) {
+                if (field.equals(USERUUID)) {
                     stmt.setString(i + 1, ((User) app.get(USER)).getUuid());
                 } else if (STRING_FIELDS.contains(field)) {
-                    stmt.setString(i + 1, (String) app.get(field));
+                    String value = (String) app.get(field);
+                    if (null != value){
+                        value = value.substring(0, Math.min(value.length(), MAX_STRING));
+                    }
+                    stmt.setString(i + 1, value);
                 } else if (INT_FIELDS.contains(field)) {
                     stmt.setInt(i + 1, (int) app.get(field));
                 } else {
@@ -187,7 +199,6 @@ public class Application extends DbModel {
         }
         List<String> fields = fieldsToSave(app);
         StringBuilder createStatement = new StringBuilder();
-        //"UPDATE users set email = ?, token = ?, password_salt = ?, password_hash = ? where uuid = ?;";
         createStatement.append("UPDATE applications set ");
         createStatement.append(fields.stream().map(f -> f + " = ?").collect(Collectors.joining(",")));
         createStatement.append(" where id = ?;");
@@ -196,10 +207,14 @@ public class Application extends DbModel {
             PreparedStatement stmt = conn.prepareStatement(createStatement.toString());
             for (int i = 0; i < fields.size(); i++) {
                 String field = fields.get(i);
-                if (field == USERUUID) {
+                if (field.equals(USERUUID)) {
                     stmt.setString(i + 1, ((User) app.get(USER)).getUuid());
                 } else if (STRING_FIELDS.contains(field)) {
-                    stmt.setString(i + 1, (String) app.get(field));
+                    String value = (String) app.get(field);
+                    if (null != value){
+                        value = value.substring(0, Math.min(value.length(), MAX_STRING));
+                    }
+                    stmt.setString(i + 1, value);
                 } else if (INT_FIELDS.contains(field)) {
                     stmt.setInt(i + 1, (int) app.get(field));
                 } else {
