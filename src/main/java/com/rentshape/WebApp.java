@@ -2,9 +2,7 @@ package com.rentshape;
 
 import com.rentshape.exceptions.DatabaseException;
 import com.rentshape.exceptions.DuplicateUserException;
-import com.rentshape.model.Application;
-import com.rentshape.model.DbModel;
-import com.rentshape.model.User;
+import com.rentshape.model.*;
 import spark.ModelAndView;
 import spark.Request;
 import spark.template.handlebars.HandlebarsTemplateEngine;
@@ -12,6 +10,7 @@ import spark.template.handlebars.HandlebarsTemplateEngine;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -189,11 +188,51 @@ public class WebApp {
             return null;
         });
 
+        Map<String, AppPart> models = new HashMap<>();
+        models.put("bank", new Bank());
+
+
+        for (String model : models.keySet()){
+            post("/" + model + "/new", (req, res) -> {
+
+            });
+            get("/" + model + "/:id", (req, res) -> {
+
+            });
+            post("/" + model + "/:id", (req, res) -> {
+
+            });
+            
+            post("/del_" + model + "/:id", (req, res) -> {
+                User user = loggedInUser(req);
+                if (null == user){
+                    res.redirect("/");
+                    return null;
+                }
+                int id = Integer.parseInt(req.params(":id"));
+                Map<String, Object> record = models.get(model).fromId(id);
+                if (! (null == record)){
+                    int appId = (int) record.get(models.get(model).APPLICATION_ID);
+                    Map<String, Object> app = Application.fromId(appId);
+                    if (! (null == app)){
+                        User appUser = (User) app.get(Application.USER);
+                        if (appUser.getUuid().equals(user.getUuid())){
+                            models.get(model).delete(id);
+                            res.redirect("/application/:"+appId);
+                        } else {
+                            res.redirect("/user/home");
+                        }
+                    } else {
+                        res.redirect("/user/home");
+                    }
+                } else {
+                    res.redirect("/user/home");
+                }
+                return null;
+            });
+        }
+
 /*
-
-
-
-
         get("/link"); //index of users links (with buttons to delete?)
         get("/link/:uuid"); // view a specified application via link
         get("/link/new"); // form to create a new link (application ID, link name)

@@ -36,6 +36,14 @@ public abstract class AppPart extends DbModel {
         return record;
     }
 
+    public Map<String, Object> fromId(int id) throws DatabaseException {
+        List<Map<String, Object>> records = fromField(ID, id);
+        if (records.size() > 0){
+            return records.get(0);
+        } else {
+            return null;
+        }
+    }
     public List<Map<String, Object>> fromApp(Map<String, Object> app) throws DatabaseException {
         int id = (int) app.get(Application.ID);
         return fromAppId(id);
