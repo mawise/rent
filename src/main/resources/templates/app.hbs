@@ -22,26 +22,29 @@
             </div>
 
             Bank Accounts
-            {{#each banks}}
-            <div>
-                <div class="form-group">
-                    <label for="bank-name-{{@index}}">Bank Name</label>
-                    <input class="form-control" id="bank-name-{{@index}}" type="text" placeholder="{{this.name}}" readonly>
+            <div id="banks-div">
+                {{#each banks}}
+                <div>
+                    <input type="hidden" name="banks-{{@index}}" value="true">
+                    <div class="form-group">
+                        <label for="banks-{{@index}}-name">Bank Name</label>
+                        <input class="form-control" id="banks-{{@index}}-name" name="banks-{{@index}}-name" type="text" value="{{this.name}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="banks-{{@index}}-address">Bank Address</label>
+                        <input class="form-control" id="banks-{{@index}}-address" name="banks-{{@index}}-address" type="text" value="{{this.address}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="banks-{{@index}}-account_number">Account Number</label>
+                        <input class="form-control" id="banks-{{@index}}-account_number" name="banks-{{@index}}-account_number" type="text" value="{{this.account_number}}">
+                    </div>
+                    <!-- button to delete this bank account -->
                 </div>
-                <div class="form-group">
-                    <label for="bank-address-{{@index}}">Bank Name</label>
-                    <input class="form-control" id="bank-address-{{@index}}" type="text" placeholder="{{this.address}}" readonly>
-                </div>
-                <div class="form-group">
-                    <label for="bank-account_number-{{@index}}">Account Number</label>
-                    <input class="form-control" id="bank-account_number-{{@index}}" type="text" placeholder="{{this.account_number}}" readonly>
-                </div>
-                <!-- button to edit this bank account -->
-                <!-- button to add a new bank account -->
+                {{else}}
+                    <!-- no banks -->
+                {{/each}}
             </div>
-            {{else}}
-                <!-- no banks -->
-            {{/each}}
+            <!-- button to add a new bank account -->
 
 
             <button type="submit" class="btn btn-default">Save Changes</button>

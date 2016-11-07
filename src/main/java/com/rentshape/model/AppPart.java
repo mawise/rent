@@ -11,6 +11,8 @@ import java.util.stream.Collectors;
 
 /**
  * Created by matt on 11/2/16.
+ *
+ * These are repeated elements in an application.  Banks, and cars and the like.
  */
 public abstract class AppPart extends DbModel {
     public final static String ID = "id";
@@ -18,6 +20,11 @@ public abstract class AppPart extends DbModel {
     public final static String APPLICATION_ID = "application_id";
 
     private final static int MAX_STRING = 250;
+
+    public static final Map<String, AppPart> models = new HashMap<>();
+    static {
+        models.put("banks", new Bank());
+    }
 
     public AppPart(){}
 
@@ -31,8 +38,11 @@ public abstract class AppPart extends DbModel {
                 || ! (app.get(Application.USER) instanceof User)) {
             throw new IllegalArgumentException("Cannot create a record without a valid application");
         }
+        return newFromApp((int) app.get(Application.ID));
+    }
+    public Map<String, Object> newFromApp(int appId) {
         Map<String, Object> record = new HashMap<>();
-        record.put(APPLICATION_ID, app.get(Application.ID));
+        record.put(APPLICATION_ID, appId);
         return record;
     }
 
@@ -172,24 +182,6 @@ public abstract class AppPart extends DbModel {
         }
     }
 
-    public void update(Map<String, Object> app, Map<String, String[]> formData){
-        for (String stringField : stringFields()){
-            String[] values = formData.get(stringField);
-            if (null != values && values.length > 0) {
-                app.put(stringField, values[0]);
-            }
-        }
-        for (String intField : intFields()){
-            if (intField.equals(ID)){ // I know, its funny because there are no other fields.
-                continue; //never update the ID.
-            }
-            String[] values = formData.get(intField);
-            if (null != values && values.length > 0) {
-                app.put(intField, Integer.parseInt(values[0])); // TODO catch NumberFormatException?
-            }
-        }
-    }
-
     public void delete(Map<String, Object> record) throws DatabaseException {
         if (record.containsKey(ID) && record.containsKey(APPLICATION_ID)){
             delete((int) record.get(ID));
@@ -205,6 +197,55 @@ public abstract class AppPart extends DbModel {
             throw new DatabaseException("Deleting your record", e);
         }
 
+    }
+
+    public static boolean belongsToUser(Map<String, Object> record, User user) throws DatabaseException {
+        if (null == user) {
+            return false;
+        }
+        if (null == record.get(AppPart.APPLICATION_ID)) {
+            return false;
+        }
+        int appId = (int) record.get(AppPart.APPLICATION_ID);
+        Map<String, Object> app = Application.fromId(appId);
+        if (null == app) {
+            return false;
+        }
+        User recordUser = (User) app.get(Application.USER);
+        if (null == recordUser) {
+            return false;
+        }
+        return recordUser.getUuid().equals(user.getUuid());
+    }
+
+    public List<Map<String, Object>> fromAppForm(Map<String, String[]> formData, int appId){
+        String key = tableName();
+        List<Map<String, Object>> modelList = new ArrayList<>();
+        for (int i=0; i<10; i++){ // max 10 entries
+            String id = key + "-" + i;
+            if (null != formData.get(id)){ // hidden marker for existance
+                Map<String, Object> model = this.newFromApp(appId);
+                for (String stringField : stringFields()){
+                    String stringKey = id+"-"+stringField;
+                    String[] values = formData.get(stringKey);
+                    if (null != values && values.length > 0) {
+                        model.put(stringField, values[0]);
+                    }
+                }
+                for (String intField : intFields()){
+                    if (intField.equals(ID)){ // I know, its funny because there are no other fields.
+                        continue; //never update the ID.
+                    }
+                    String intKey = id+"-"+intField;
+                    String[] values = formData.get(intKey);
+                    if (null != values && values.length > 0) {
+                        model.put(intField, Integer.parseInt(values[0])); // TODO catch NumberFormatException?
+                    }
+                }
+                modelList.add(model);
+            }
+        }
+        return modelList;
     }
 
 }

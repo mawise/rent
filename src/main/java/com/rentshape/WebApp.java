@@ -3,9 +3,11 @@ package com.rentshape;
 import com.rentshape.exceptions.DatabaseException;
 import com.rentshape.exceptions.DuplicateUserException;
 import com.rentshape.model.*;
+import com.sun.org.apache.xpath.internal.operations.Mod;
 import spark.ModelAndView;
 import spark.Request;
 import spark.template.handlebars.HandlebarsTemplateEngine;
+import sun.applet.AppletListener;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -191,46 +193,6 @@ public class WebApp {
         Map<String, AppPart> models = new HashMap<>();
         models.put("bank", new Bank());
 
-
-        for (String model : models.keySet()){
-            post("/" + model + "/new", (req, res) -> {
-
-            });
-            get("/" + model + "/:id", (req, res) -> {
-
-            });
-            post("/" + model + "/:id", (req, res) -> {
-
-            });
-            
-            post("/del_" + model + "/:id", (req, res) -> {
-                User user = loggedInUser(req);
-                if (null == user){
-                    res.redirect("/");
-                    return null;
-                }
-                int id = Integer.parseInt(req.params(":id"));
-                Map<String, Object> record = models.get(model).fromId(id);
-                if (! (null == record)){
-                    int appId = (int) record.get(models.get(model).APPLICATION_ID);
-                    Map<String, Object> app = Application.fromId(appId);
-                    if (! (null == app)){
-                        User appUser = (User) app.get(Application.USER);
-                        if (appUser.getUuid().equals(user.getUuid())){
-                            models.get(model).delete(id);
-                            res.redirect("/application/:"+appId);
-                        } else {
-                            res.redirect("/user/home");
-                        }
-                    } else {
-                        res.redirect("/user/home");
-                    }
-                } else {
-                    res.redirect("/user/home");
-                }
-                return null;
-            });
-        }
 
 /*
         get("/link"); //index of users links (with buttons to delete?)

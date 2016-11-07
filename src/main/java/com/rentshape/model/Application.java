@@ -45,9 +45,6 @@ public class Application extends DbModel {
     public static List<Map<String, Object>> fromUser(User user) throws DatabaseException {
         String uuid = user.getUuid();
         List<Map<String, Object>> apps = Application.fromField(USERUUID, uuid);
-       // for (Map<String, Object> app : apps){
-       //     Application.setUser(app, user);
-       // }
         return apps;
     }
 
@@ -56,7 +53,7 @@ public class Application extends DbModel {
         if (apps.size() > 0){
             return apps.get(0);
         } else {
-            return null; //TODO use optional
+            return null; //TODO use optional?
         }
 
     }
@@ -87,9 +84,11 @@ public class Application extends DbModel {
                 app.put(USERUUID, userUuid);
                 User user = User.fromUuid(userUuid);
                 app.put(USER, user);
-                List<Map<String, Object>> banks = new Bank().fromAppId((int) app.get(ID));
-                app.put(BANKS, banks);
 
+                for (AppPart model : AppPart.models.values()){
+                    List<Map<String, Object>> records = model.fromAppId((int) app.get(ID));
+                    app.put(model.tableName(), records);
+                }
 
                 appList.add(app);
             }
@@ -226,9 +225,25 @@ public class Application extends DbModel {
         } catch (SQLException e) {
             throw new DatabaseException("saving your application", e);
         }
+
+        for (AppPart model : AppPart.models.values()){
+            String key = model.tableName();
+            List<Map<String, Object>> modelObjects = (List<Map<String, Object>>) app.get(key);
+            String delete = "DELETE from " + key + " where " + model.APPLICATION_ID + " = " + app.get(Application.ID);
+            try {
+                PreparedStatement stmt = conn.prepareStatement(delete);
+                stmt.execute();
+            } catch (SQLException e) {
+                throw new DatabaseException("deleting old records", e);
+            }
+            for (Map<String, Object> record : modelObjects){
+                model.create(record); // writes to DB
+            }
+        }
     }
 
     public static void update(Map<String, Object> app, Map<String, String[]> formData){
+        int appId = (int) app.get(ID);
         for (String stringField : STRING_FIELDS){
             String[] values = formData.get(stringField);
             if (null != values && values.length > 0) {
@@ -243,6 +258,11 @@ public class Application extends DbModel {
             if (null != values && values.length > 0) {
                 app.put(intField, Integer.parseInt(values[0])); // TODO catch NumberFormatException?
             }
+        }
+        for (AppPart model : AppPart.models.values()){
+            String key = model.tableName();
+            List<Map<String, Object>> modelObjects = model.fromAppForm(formData, appId);
+            app.put(key, modelObjects);
         }
     }
 
