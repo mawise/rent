@@ -23,8 +23,9 @@
 
             Bank Accounts
             <div id="banks-div">
+                <hr>
                 {{#each banks}}
-                <div>
+                <div id="banks-{{@index}}">
                     <input type="hidden" name="banks-{{@index}}" value="true">
                     <div class="form-group">
                         <label for="banks-{{@index}}-name">Bank Name</label>
@@ -38,19 +39,60 @@
                         <label for="banks-{{@index}}-account_number">Account Number</label>
                         <input class="form-control" id="banks-{{@index}}-account_number" name="banks-{{@index}}-account_number" type="text" value="{{this.account_number}}">
                     </div>
-                    <!-- button to delete this bank account -->
+                    <button type="button" class="btn btn-danger" onclick="del('banks', {{@index}})">Delete Bank</button>
+                    <hr>
                 </div>
                 {{else}}
                     <!-- no banks -->
                 {{/each}}
             </div>
-            <!-- button to add a new bank account -->
 
+            <button type="button" class="btn btn-success" onclick="addBank()">Add Bank</button>
+            <hr>
 
             <button type="submit" class="btn btn-default">Save Changes</button>
         </form>
     </div>
 </div>
 
+<script>
+    function addBank() {
+        var i;
+        for (i = 0; i < 10; i++) {
+            if (document.getElementById("banks-" + i)) {
+                continue;
+            } else {
+                break;
+            }
+        }
+        if (i == 10){
+            alert("Maximum of 10 banks");
+        } else {
+            $( "#banks-div" ).append(
+            `<div id="banks-${i}">
+                <input type="hidden" name="banks-${i}" value="true">
+                <div class="form-group">
+                    <label for="banks-${i}-name">Bank Name</label>
+                    <input class="form-control" id="banks-${i}-name" name="banks-${i}-name" type="text">
+                </div>
+                <div class="form-group">
+                    <label for="banks-${i}-address">Bank Address</label>
+                    <input class="form-control" id="banks-${i}-address" name="banks-${i}-address" type="text">
+                </div>
+                <div class="form-group">
+                    <label for="banks-${i}-account_number">Account Number</label>
+                    <input class="form-control" id="banks-${i}-account_number" name="banks-${i}-account_number" type="text">
+                </div>
+                <button type="button" class="btn btn-danger" onclick="del('banks', ${i})">Delete Bank</button>
+                <hr>
+            </div>`
+            )
+        }
+    }
+    function del(type, number) {
+        var divId = type + "-" + number;
+        $( "#"+divId ).remove();
+    }
+</script>
 
 {{> bottom.hbs}}
